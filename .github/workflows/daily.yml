@@ -1,0 +1,41 @@
+name: 全国洗车机招标每日监控
+
+on:
+  schedule:
+    - cron: '0 0 * * *'   # UTC 00:00 = 北京时间每天 08:00
+  workflow_dispatch:       # 允许在 GitHub 页面手动点按钮运行
+
+permissions:
+  contents: write   # 允许 Action 把 seen.json / latest_result.json 提交回仓库
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+
+      - name: 运行监控
+        env:
+          PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+          DAYS_BACK: '3'
+          MAX_PAGES: '5'
+          SEND_HEARTBEAT: '1'
+        run: python monitor.py
+
+      - name: 提交去重状态
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add seen.json latest_result.json
+          git diff --staged --quiet || git commit -m "chore: update seen.json [skip ci]"
+          git push
