@@ -3,4 +3,12 @@ __pycache__/
 *.pyc
 test_seen.json
 test_result.json
+# 本地诊断脚本与历史日志不入库；sample_*.html 由云端运行时生成并回传
 debug/joblog.txt
+debug/joblog2.txt
+debug/live_*.html
+debug/nonempty_*.html
+debug/fetch_live.py
+debug/probe.py
+debug/probe_grid.py
+debug/test_parse.py
