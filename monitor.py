@@ -117,6 +117,10 @@ def fetch_ccgp(keyword):
         items.extend(page_items)
         log(f"  [{keyword}] 第{page}页解析到 {len(page_items)} 条")
 
+        # 诊断：第1页把页面结构线索打进日志，并落盘原始HTML回传仓库
+        if page == 1:
+            diagnose(keyword, html)
+
         if not has_next:
             break
         time.sleep(random.uniform(0.6, 1.4))  # 礼貌延时，降低被封概率
@@ -126,6 +130,29 @@ def fetch_ccgp(keyword):
     if error and not items:
         return items, "error"
     return items, "ok"
+
+
+def diagnose(keyword, html):
+    """把云端实际拿到的页面结构线索打进日志，并落盘第1页原始HTML供回传核对"""
+    soup = BeautifulSoup(html, "html.parser")
+    title = soup.title.get_text(strip=True) if soup.title else "(无title)"
+    all_links = soup.find_all("a", href=True)
+    ccgp_links = [a["href"].strip() for a in all_links if "ccgp.gov.cn" in a["href"]]
+    # 结果列表容器线索
+    uls = soup.find_all("ul", class_=True)
+    li_count = len(soup.find_all("li"))
+    log(f"  [{keyword}] 诊断 title={title!r}")
+    log(f"  [{keyword}] 诊断 总链接={len(all_links)} ccgp链接={len(ccgp_links)} li={li_count} ulClass={[u.get('class') for u in uls][:6]}")
+    for s in ccgp_links[:5]:
+        log(f"  [{keyword}] 诊断 href样例: {s[:110]}")
+    # 落盘原始 HTML（workflow 会把 debug/ 目录提交回仓库）
+    try:
+        os.makedirs("debug", exist_ok=True)
+        safe = re.sub(r"\W+", "_", keyword)
+        with open(os.path.join("debug", f"sample_{safe}.html"), "w", encoding="utf-8") as f:
+            f.write(html)
+    except Exception as e:
+        log(f"  [{keyword}] 诊断落盘失败: {e}")
 
 
 def parse_ccgp_html(html):

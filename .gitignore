@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 test_seen.json
 test_result.json
+debug/joblog.txt
